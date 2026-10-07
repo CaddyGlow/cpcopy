@@ -1,0 +1,39 @@
+[package]
+name = "cpcopy"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+license = "MIT"
+repository = "https://github.com/CaddyGlow/cpcopy"
+description = "Independent Rust cp engine with a library and CLI"
+
+[features]
+default = ["cli"]
+cli = ["dep:clap", "dep:serde_json"]
+# Optional library counters and, with cli, terminal rendering.
+live-progress = ["dep:indicatif", "dep:console"]
+
+[[bin]]
+name = "cpcopy"
+path = "src/main.rs"
+required-features = ["cli"]
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "4.5", features = ["derive"], optional = true }
+serde_json = { version = "1.0", optional = true }
+libc = "0.2"
+indicatif = { version = "0.18.6", default-features = false, optional = true }
+console = { version = "0.16", default-features = false, features = ["std"], optional = true }
+
+[dev-dependencies]
+tempfile = "3.23"
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+
+[workspace]
+
+[profile.release]
+lto = "thin"
+strip = true
