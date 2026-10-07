@@ -130,7 +130,10 @@ int unlinkat(int fd,const char*p,int flags){if(fault("clone-gone") || fault("rem
         assert_eq!(
             state(),
             reference_state,
-            "{fault}: retained destination state"
+            "{fault}: retained destination state; actual status {:?}, actual stderr {}, reference stderr {}",
+            actual.status.code(),
+            String::from_utf8_lossy(&actual.stderr),
+            String::from_utf8_lossy(&reference.stderr)
         );
         assert!(
             reference.status.success() == (fault == "remove-gone"),
