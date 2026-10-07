@@ -21,10 +21,11 @@ fn uncommon_regular_file_failures_match_gnu_diagnostics() {
 #include <string.h>
 #include <stdio.h>
 #include <dlfcn.h>
+// Force ownership to differ from the creator even when the runner uses UID 0.
 static int fault(const char *name){return !strcmp(getenv("FAULT"),name);}
 static int named(int fd,const char *name){char link[80],path[4096];snprintf(link,sizeof link,"/proc/self/fd/%d",fd);ssize_t n=readlink(link,path,sizeof path-1);if(n<0)return 0;path[n]=0;char *base=strrchr(path,'/');return base && !strcmp(base+1,name);}
-int fstat(int fd,struct stat *s){int r=((int(*)(int,struct stat*))dlsym(RTLD_NEXT,"fstat"))(fd,s);if(r)return r;if((fault("source-stat") && named(fd,"source")) || (fault("dest-stat") && named(fd,"destination"))){errno=EIO;return -1;}if(fault("replaced") && named(fd,"source"))s->st_ino++;if(fault("owner") && named(fd,"source"))s->st_uid=0;return 0;}
-int fstat64(int fd,struct stat64 *s){int r=((int(*)(int,struct stat64*))dlsym(RTLD_NEXT,"fstat64"))(fd,s);if(r)return r;if((fault("source-stat") && named(fd,"source")) || (fault("dest-stat") && named(fd,"destination"))){errno=EIO;return -1;}if(fault("replaced") && named(fd,"source"))s->st_ino++;if(fault("owner") && named(fd,"source"))s->st_uid=0;return 0;}
+int fstat(int fd,struct stat *s){int r=((int(*)(int,struct stat*))dlsym(RTLD_NEXT,"fstat"))(fd,s);if(r)return r;if((fault("source-stat") && named(fd,"source")) || (fault("dest-stat") && named(fd,"destination"))){errno=EIO;return -1;}if(fault("replaced") && named(fd,"source"))s->st_ino++;if(fault("owner") && named(fd,"source"))s->st_uid=s->st_uid==0?1:0;return 0;}
+int fstat64(int fd,struct stat64 *s){int r=((int(*)(int,struct stat64*))dlsym(RTLD_NEXT,"fstat64"))(fd,s);if(r)return r;if((fault("source-stat") && named(fd,"source")) || (fault("dest-stat") && named(fd,"destination"))){errno=EIO;return -1;}if(fault("replaced") && named(fd,"source"))s->st_ino++;if(fault("owner") && named(fd,"source"))s->st_uid=s->st_uid==0?1:0;return 0;}
 int ftruncate(int fd,off_t size){if(fault("truncate") && size==0){errno=EIO;return -1;}return ((int(*)(int,off_t))dlsym(RTLD_NEXT,"ftruncate"))(fd,size);}
 int ftruncate64(int fd,off64_t size){return ftruncate(fd,size);}
 int acl_set_fd(int fd,void*acl){if(fault("acl-write")){errno=EIO;return -1;}return ((int(*)(int,void*))dlsym(RTLD_NEXT,"acl_set_fd"))(fd,acl);}
