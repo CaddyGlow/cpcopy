@@ -7,6 +7,11 @@ license = "MIT"
 repository = "https://github.com/CaddyGlow/cpcopy"
 description = "Independent Rust cp engine with a library and CLI"
 
+readme = "README.md"
+homepage = "https://github.com/CaddyGlow/cpcopy"
+keywords = ["copy", "filesystem", "cli", "windows"]
+categories = ["filesystem", "command-line-utilities"]
+
 [features]
 default = ["cli"]
 cli = ["dep:clap", "dep:serde_json"]

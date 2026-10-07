@@ -11,24 +11,28 @@ concurrency:
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 permissions:
   contents: read
+defaults:
+  run:
+    shell: bash
+    working-directory: cpcopy
 jobs:
   test:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          path: cpcopy
       - uses: dtolnay/rust-toolchain@1.99.0
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: cpcopy -> target
       - run: cargo fmt -- --check
       - run: cargo clippy --all-targets --all-features --locked -- -D warnings
       - run: cargo test --all-features --locked
-
-  windows:
-    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@1.99.0
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo test --all-features --locked
+      - run: cargo test --no-default-features --locked

@@ -15,8 +15,7 @@ cargo test -p cpcopy --locked
 cargo test -p cpcopy --no-default-features --locked
 ```
 
-The root `cargo build --bin cpcopy` remains supported through workspace default
-members. There is one CLI target, owned by this crate.
+There is one CLI target, `cpcopy`, alongside the library.
 
 ## Windows
 
@@ -24,8 +23,9 @@ Build on Windows with `cargo build -p cpcopy --release --locked`, or cross-compi
 and export a Windows x64 executable with a static CRT:
 
 ```sh
-task build:windows:cpcopy
-# Output: dist/cpcopy.exe
+rustup target add x86_64-pc-windows-msvc
+cargo build --release --locked --target x86_64-pc-windows-msvc
+# Output: target/x86_64-pc-windows-msvc/release/cpcopy.exe
 ```
 
 The Windows backend uses native UTF-16 paths, including filenames containing
@@ -48,7 +48,7 @@ Dense Windows files of at least 8 MiB overlap reads and writes through two reusa
 buffers. The default request size is 1 MiB on Windows and 256 KiB on Linux;
 `--buffer-size` overrides it. Small Windows files allocate smaller buffers, and
 sparse copies retain the sparse-aware transfer path. The
-[same-run optimization benchmark](../../docs/fixtures/copy-engine/cpcopy-windows-optimization-20261004/README.md)
+same-run optimization benchmark (historical windows-uup workspace evidence)
 reduced the 256 MiB copy median from 115.5 ms to 77.2 ms with all payloads verified.
 
 `-j N` / `--jobs=N` opts into bounded Windows concurrency (1..64; default 1). Only
@@ -59,7 +59,7 @@ replacement, SACL preservation and caller impersonation retain serial execution.
 At most `2 * jobs` copies are outstanding, and callbacks replay on the caller
 thread in traversal order.
 
-The [concurrency and metadata benchmark](../../docs/fixtures/copy-engine/cpcopy-windows-concurrency-20261004/README.md)
+The concurrency and metadata benchmark (historical windows-uup workspace evidence)
 reduced the 1,000-file median from 425.2 ms to 367.1 ms with timestamp-handle
 reuse and one worker. Two workers reached 360.0 ms; four and eight were slower
 than the new serial path on that VM. The default remains one worker.
@@ -77,7 +77,7 @@ reparse-point types are not supported by the native media profile and fail
 explicitly. This is not a complete Windows backup tool or full GNU cp compatibility
 claim. Same-path force-with-backup copies are not supported.
 
-[Windows validation and benchmark evidence](../../docs/fixtures/copy-engine/cpcopy-windows-20261004/README.md)
+Windows validation and benchmark evidence (historical windows-uup workspace evidence)
 records 26 passing integration tests in a Windows 11 NTFS VM, including the
 privilege-dependent cases, plus the library-only tests and comparisons with
 Robocopy and PowerShell `cp`.
@@ -104,17 +104,17 @@ The library does not change the process umask when starting workers.
 cpcopy -R -j 4 --preserve=timestamps SOURCE NEW_DESTINATION
 ```
 
-The [Linux concurrency benchmark](../../docs/fixtures/copy-engine/cpcopy-linux-concurrency-20261004/README.md)
+The Linux concurrency benchmark (historical windows-uup workspace evidence)
 verified 288 copies on warm ext4. Two workers reduced the 10,000 × 4 KiB median
 from 151.4 ms to 120.2 ms; eight reduced sixteen 16 MiB files from 61.4 ms to
 27.4 ms. A single 256 MiB file did not improve. The default remains one worker.
 
 ## Library
 
-Use a path dependency with `default-features = false` to omit Clap and JSON output:
+Use a registry dependency with `default-features = false` to omit Clap and JSON output:
 
 ```toml
-cpcopy = { path = "crates/cpcopy", default-features = false }
+cpcopy = { version = "0.1.0", default-features = false }
 ```
 
 ```rust,no_run
@@ -540,7 +540,7 @@ Progress and diagnostic output can interleave. Enabled tracking batches counter 
 remaining counts when the transfer ends. These choices reduce overhead but do
 not make enabled progress free.
 
-The [live progress measurements](../../docs/fixtures/copy-engine/cpcopy-live-progress-20261004/README.md)
+The live progress measurements (historical windows-uup workspace evidence)
 verified 464 warm-cache Linux benchmark copies, including real terminal output.
 Most terminal median deltas were around 0–2%; the largest increase was 4.6%.
 Single-file bar/ETA runs showed no median regression. These measurements do not
@@ -591,3 +591,8 @@ and provide no validation evidence.
 All 68 crate tests, Clippy with warnings denied, and unchanged GNU
 `preserve-2.sh`, `preserve-mode.sh`, `preserve-slink-time.sh`, and
 `attr-existing.sh` pass after this change.
+
+## Releases
+
+CI checks formatting, Clippy and tests on Linux and Windows. A matching version tag runs validation, verifies and publishes the crate to crates.io, then creates its GitHub Release with the crate and SHA-256 checksums.
+Compiled Linux x86_64 and Windows x86_64 binaries are also attached to each release.
